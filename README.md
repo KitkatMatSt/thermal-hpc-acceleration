@@ -1,5 +1,8 @@
-# 🏢 Thermal PDE Acceleration Pipeline for Floorplan Heat Diffusion
-> **Numerical Laplace PDE solver & performance engineering across 4,500+ architectural floorplans via CPU Dynamic Parallelism, Numba JIT, Custom CUDA, and Fused CuPy Acceleration.**
+# Thermal PDE Acceleration Pipeline for Floorplan Heat Diffusion
+
+> This project was developed for **DTU 02613: Python and High-Performance Computing (Spring 2025)** at the Technical University of Denmark. The original baseline problem, dataset (Modified Swiss Dwellings), and reference implementation are credited to the course creators.
+
+Numerical Laplace PDE solver & performance engineering across 4,500+ architectural floorplans via CPU Dynamic Parallelism, Numba JIT, Custom CUDA, and Fused CuPy Acceleration.
 
 [![DTU](https://img.shields.io/badge/DTU-02613_Python_&_HPC-red)](https://kurser.dtu.dk/course/02613)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)

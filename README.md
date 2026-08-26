@@ -8,6 +8,15 @@
 
 ---
 
+## 📖 Table of Contents
+- [Project Background](#project-background--problem-formulation)
+- [Key Achievements & Impact](#key-achievements--impact)
+- [Performance Benchmark & Scaling Roadmap](#performance-benchmark--scaling-roadmap)
+- [Technical Deep-Dives & Profiling Discoveries](#technical-deep-dives--profiling-discoveries)
+- [Physical Insights & Domain Results](#physical-insights--domain-results)
+- [How I Used GenAI as a Multiplier](#how-i-used-genai-gemini-as-a-technical-multiplier)
+- [Repository Structure](#-repository-structure--directory-layout)
+
 ## 🎯 Project Background & Problem Formulation
 
 ### 1. The Real-World Domain Problem

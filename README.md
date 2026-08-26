@@ -8,16 +8,16 @@
 
 ---
 
-## 📖 Table of Contents
-- [Project Background](#project-background--problem-formulation)
+## Table of Contents
+- [Project Background & Problem Formulation](#project-background--problem-formulation)
 - [Key Achievements & Impact](#key-achievements--impact)
 - [Performance Benchmark & Scaling Roadmap](#performance-benchmark--scaling-roadmap)
 - [Technical Deep-Dives & Profiling Discoveries](#technical-deep-dives--profiling-discoveries)
 - [Physical Insights & Domain Results](#physical-insights--domain-results)
-- [How I Used GenAI as a Multiplier](#how-i-used-genai-gemini-as-a-technical-multiplier)
-- [Repository Structure](#-repository-structure--directory-layout)
+- [How I Used GenAI (Gemini) as a Technical Multiplier](#how-i-used-genai-gemini-as-a-technical-multiplier)
+- [Repository Structure & Directory Layout](#repository-structure--directory-layout)
 
-## 🎯 Project Background & Problem Formulation
+## Project Background & Problem Formulation
 
 ### 1. The Real-World Domain Problem
 This project evaluates an experimental building heating solution—**Wall Heating**—across **4,571 building floorplans** from the [*Modified Swiss Dwellings*](/dtu/projects/02613_2025/data/modified_swiss_dwellings/) dataset. Heating elements are embedded into non-structural interior walls to act as continuous thermal radiators, while structural load-bearing walls remain cold.
@@ -43,7 +43,7 @@ Updates repeat until maximum iteration or convergence ($\Delta = \max|u^{(k+1)} 
 
 ---
 
-## 📌 Key Achievements & Impact
+## Key Achievements & Impact
 
 * **🚀 24.3x Peak Speedup**: Scaled processing speed **from ~13.9 hours down to ~24 minutes** for all 4,571 floorplans.
 * **🔍 Bottleneck Profiling**: Identified that **88.7% of CUDA API duration** was lost to allocation overhead (`cudaMalloc`) via NVIDIA Nsys. Refactored dynamic checks, reducing launch calls by **98.4%**.
@@ -52,7 +52,7 @@ Updates repeat until maximum iteration or convergence ($\Delta = \max|u^{(k+1)} 
 
 ---
 
-## ⚡ Performance Benchmark & Scaling Roadmap
+## Performance Benchmark & Scaling Roadmap
 
 Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) to the full dataset (4,571 floorplans):
 
@@ -68,7 +68,7 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 ---
 
-## 🛠️ Technical Deep-Dives & Profiling Discoveries
+## Technical Deep-Dives & Profiling Discoveries
 
 ### 1. Dynamic Task Dispatch for Variable Geometries
 * **Problem**: Different floorplans require vastly different iteration counts to reach numerical convergence. Static batch allocation caused core idling.
@@ -86,7 +86,7 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 ---
 
-## 📊 Physical Insights & Domain Results
+## Physical Insights & Domain Results
 
 * **Mean Temperature Distribution**: Normally distributed around **$14.69^\circ\text{C}$** ($\sigma \approx 6.80^\circ\text{C}$).
 * **Comfort Threshold ($\ge 18^\circ\text{C}$)**: Only **17.6% (804 buildings)** satisfy the comfort threshold over $>50\%$ of their area.
@@ -94,14 +94,14 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 ---
 
-## 💡 How I Used GenAI (Gemini) as a Technical Multiplier
+## How I Used GenAI (Gemini) as a Technical Multiplier
 
 Coming from a mathematics/statistics background, I strategically leveraged **Gemini (GenAI)** as an engineering pair-programmer:
 1. **Profiling Log Analysis**: Converted raw `nsys` profiler outputs into explicit refactoring targets, uncovering asynchronous queue locks and dynamic dynamic allocations (`cudaMalloc`).
 2. **CUDA Boundary Handling**: Restructured 2D thread index bounds (`cuda.grid(2)`) to eliminate memory segmentation faults during GPU stencil calls.
 3. **Pipelining**: Designed async CPU-GPU execution pipelines to eliminate redundant PCIe data transfers
 
-## 📁 Repository Structure & Directory Layout
+## Repository Structure & Directory Layout
 ```text
 thermal-hpc-acceleration/
 ├── README.md                      # Project documentation and performance report

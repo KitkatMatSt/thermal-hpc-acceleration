@@ -13,19 +13,24 @@ Numerical Laplace PDE solver & performance engineering across 4,500+ architectur
 
 ## Table of Contents
 - [Project Background & Problem Formulation](#project-background--problem-formulation)
-- [Key Achievements & Impact](#key-achievements--impact)
+- [Key Achievements & Technical Highlights](#key-achievements--technical-highlights)
 - [Performance Benchmark & Scaling Roadmap](#performance-benchmark--scaling-roadmap)
 - [Technical Deep-Dives & Profiling Discoveries](#technical-deep-dives--profiling-discoveries)
 - [Physical Insights & Domain Results](#physical-insights--domain-results)
 - [How I Used GenAI (Gemini) as a Technical Multiplier](#how-i-used-genai-gemini-as-a-technical-multiplier)
 - [Repository Structure & Directory Layout](#repository-structure--directory-layout)
 
+---
+
 ## Project Background & Problem Formulation
 
 ### 1. The Real-World Domain Problem
-This project evaluates an experimental building heating solution—**Wall Heating**—across **4,571 building floorplans** from the [*Modified Swiss Dwellings*](/dtu/projects/02613_2025/data/modified_swiss_dwellings/) dataset. Heating elements are embedded into non-structural interior walls to act as continuous thermal radiators, while structural load-bearing walls remain cold.
+This project evaluates an experimental building heating solution—**Wall Heating**—across **4,571 building floorplans** from the *Modified Swiss Dwellings* dataset. Heating elements are embedded into non-structural interior walls to act as continuous thermal radiators, while structural load-bearing walls remain cold.
 
 The goal is to simulate steady-state room heat distribution and evaluate human thermal comfort ($\ge 18^\circ\text{C}$) and cold-spot risks ($< 15^\circ\text{C}$).
+
+* **Full Dataset Path (DTU HPC Cluster)**: `/dtu/projects/02613_2025/data/modified_swiss_dwellings/`
+* **Local Sample Data**: Lightweight test floorplans are provided under `data/sample_floorplans/` for standalone reproduction.
 
 ### 2. Mathematical Modeling (2D Thermal PDE)
 Let $u(x,y)$ denote the steady-state temperature at coordinate $(x,y)$. The overall heat distribution across a floorplan is modeled by solving 2D **Laplace's Equation**:
@@ -42,16 +47,17 @@ Discretized on a $514 \times 514$ grid, the temperature $u_{i,j}$ at each interi
 
 $$u_{i,j}^{(k+1)} = \frac{1}{4} \left( u_{i,j-1}^{(k)} + u_{i,j+1}^{(k)} + u_{i-1,j}^{(k)} + u_{i+1,j}^{(k)} \right)$$
 
-Updates repeat until maximum iteration or convergence ($\Delta = \max|u^{(k+1)} - u^{(k)}| < \text{atol}$).
+Updates repeat until maximum iteration or convergence ($\Delta = \max\vert{}u^{(k+1)} - u^{(k)}\vert{} < \text{atol}$).
 
 ---
 
-## Key Achievements & Impact
+## Key Achievements & Technical Highlights
 
 * **🚀 24.3x Peak Speedup**: Scaled processing speed **from ~13.9 hours down to ~24 minutes** for all 4,571 floorplans.
-* **🔍 Bottleneck Profiling**: Identified that **88.7% of CUDA API duration** was lost to allocation overhead (`cudaMalloc`) via NVIDIA Nsys. Refactored dynamic checks, reducing launch calls by **98.4%**.
-* **🤖 AI-Augmented Workflow**: Leveraged Gemini (LLM) as an engineering pair-programmer to profile memory bottlenecks, restructure memory alignment (row-major C-loops), and debug CUDA thread bounds.
-* **📊 Thermal Findings**: Simulated 4,500+ buildings—revealing that only **17.6%** reach the $18^\circ\text{C}$ threshold over $>50\%$ of their room area with wall heating alone.
+* **🔍 Profiling-Driven Memory Optimization**: Discovered via NVIDIA Nsys that **88.7% of CUDA API time** was spent on dynamic allocation (`cudaMalloc`). Refactored convergence evaluation checks, reducing kernel launch calls by **98.4%**.
+* **⚙️ Chunked HPC Execution Strategy**: To circumvent strict LSF wall-clock time limits during full-dataset sweeps (4,571 floorplans), execution was partitioned into decoupled batch scripts (`sub_final_2000.sh` & `sub_final_part2.sh`) and aggregated via `task12_summary.py`.
+* **🤖 AI-Augmented Workflow**: Leveraged Gemini as an engineering pair-programmer to profile memory bottlenecks, restructure memory alignment (row-major C-loops), and debug CUDA thread bounds.
+* **📊 Physical Evaluation**: Simulated 4,500+ buildings—revealing that only **17.6%** satisfy human thermal comfort over $>50\%$ of their room area with wall heating alone.
 
 ---
 
@@ -61,12 +67,12 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 | Optimization Stage | Tech Stack & Optimization Strategy | Time (20 Plans) | Speedup Factor | Full Dataset Est. (4,571 Plans) |
 | :--- | :--- | :---: | :---: | :---: |
-| **Task 2: Baseline** | Pure NumPy Slicing (Single Core) | 219.0 s| 1.0x | ~13.9 hours |
-| **Task 5: Multi-Core CPU** | Static Scheduling (`multiprocessing`, 16 cores) | 125.6 s | 1.7x| ~3.19 hours |
+| **Task 2: Baseline** | Pure NumPy Slicing (Single Core) | 219.0 s | 1.0x | ~13.9 hours |
+| **Task 5: Multi-Core CPU** | Static Scheduling (`multiprocessing`, 16 cores) | 125.6 s | 1.7x | ~3.19 hours |
 | **Task 6: Multi-Core CPU** | Dynamic Scheduling (`chunksize=1`, 16 cores) | 84.6 s | 2.6x | ~2.15 hours |
 | **Task 7: CPU Acceleration** | Numba `@njit` (Cache-friendly C-contiguous loops) | 63.0 s | 3.5x | ~4.00 hours |
 | **Task 8: Custom GPU Kernel** | Numba `@cuda.jit` + Pre-allocated Static Arrays | 27.0 s | 8.1x | ~1.70 hours |
-| **Task 9: Naive GPU** | High-level CuPy Array Operations| 55.0 s | 4.0x | ~3.49 hours |
+| **Task 9: Naive GPU** | High-level CuPy Array Operations | 55.0 s | 4.0x | ~3.49 hours |
 | **🎯 Task 10: Fused GPU** | **CuPy `@cp.fuse()` + Pipelined Convergence (1/10 iter)** | **9.0 s** | **24.3x** | **~24 minutes** |
 
 ---
@@ -74,15 +80,15 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 ## Technical Deep-Dives & Profiling Discoveries
 
 ### 1. Dynamic Task Dispatch for Variable Geometries
-* **Problem**: Different floorplans require vastly different iteration counts to reach numerical convergence. Static batch allocation caused core idling.
+* **Problem**: Different floorplans require vastly different iteration counts to reach numerical convergence. Static batch allocation caused CPU core idling.
 * **Solution**: Implemented dynamic worker pools (`multiprocessing.Pool(chunksize=1)`). Workers process the next available plan immediately upon completion, dropping execution time by **32.7%** compared to static scheduling at 16 cores.
 
 ### 2. Cache-Friendly JIT Compilation (`@njit`)
 * **Strategy**: Replaced high-level NumPy array slicing with explicit nested loops structured in **row-major order** (outer loop `i` over rows, inner loop `j` over columns).
-* **Impact**: Matches NumPy’s memory layout, minimizing CPU L1/L2 cache misses and delivering a **3.48x speedup** over the CPU baseline.
+* **Impact**: Matches C-contiguous memory layout, minimizing CPU L1/L2 cache misses and delivering a **3.48x speedup** over the CPU baseline.
 
 ### 3. Profiling-Driven Kernel Fusion & Stream Pipelining
-* **Nsys Profiling Discovery**: High-level CuPy code suffered from **2,177 `cuLaunchKernel` calls** and spending 88.7% of CUDA API time in dynamic allocation (`cudaMalloc`) due to checking convergence (`delta < atol`) every iteration.
+* **Nsys Profiling Discovery**: High-level CuPy code suffered from **2,177 `cuLaunchKernel` calls** and spent 88.7% of CUDA API time in dynamic allocation (`cudaMalloc`) due to checking convergence (`delta < atol`) every iteration.
 * **Refactoring**:
   1. Consolidated 4-point stencil averaging and mask operations into a single unified GPU kernel via `@cp.fuse()`.
   2. Modified the host loop to evaluate convergence **only once every 10 iterations**, dropping launch calls from 2,177 to 35 (**98.4% reduction**).
@@ -91,48 +97,76 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 ## Physical Insights & Domain Results
 
-* **Mean Temperature Distribution**: Normally distributed around **$14.69^\circ\text{C}$** ($\sigma \approx 6.80^\circ\text{C}$).
-* **Comfort Threshold ($\ge 18^\circ\text{C}$)**: Only **17.6% (804 buildings)** satisfy the comfort threshold over $>50\%$ of their area.
-* **Cold Deficit ($< 15^\circ\text{C}$)**: **54.1% (2,471 buildings)** remain below $15^\circ\text{C}$ over most of their layout, proving wall heating alone is structurally insufficient without supplementary exterior insulation.
+| Task 1: Initial Input & Domain Mask | Task 3: Steady-State Heat Diffusion |
+| :---: | :---: |
+| ![Task 1 Raw Data](docs/images/task1_raw_input.png) | ![Task 3 Heatmaps](docs/images/task3_heatmaps.png) |
+| *Initial temperature domain & interior mask layout* | *Thermal equilibrium solved via Jacobi stencil relaxation* |
+
+* **Temperature Distribution**: Across all 4,571 floorplans, the equilibrium mean temperature exhibits a unimodal, bell-shaped distribution centered around **$14.69^\circ\text{C}$** ($\sigma \approx 6.80^\circ\text{C}$).
+* **Thermal Comfort ($\ge 18^\circ\text{C}$)**: Only **17.6% (804 buildings)** satisfy the comfort threshold over $>50\%$ of their floor area.
+* **Cold Deficit ($< 15^\circ\text{C}$)**: **54.1% (2,471 buildings)** remain below $15^\circ\text{C}$ over most of their layout, proving wall heating alone is structurally insufficient without supplementary insulation.
 
 ---
 
 ## How I Used GenAI (Gemini) as a Technical Multiplier
 
 Coming from a mathematics/statistics background, I strategically leveraged **Gemini (GenAI)** as an engineering pair-programmer:
-1. **Profiling Log Analysis**: Converted raw `nsys` profiler outputs into explicit refactoring targets, uncovering asynchronous queue locks and dynamic dynamic allocations (`cudaMalloc`).
+1. **Profiling Log Analysis**: Converted raw `nsys` profiler outputs into explicit refactoring targets, uncovering asynchronous queue locks and dynamic allocations (`cudaMalloc`).
 2. **CUDA Boundary Handling**: Restructured 2D thread index bounds (`cuda.grid(2)`) to eliminate memory segmentation faults during GPU stencil calls.
-3. **Pipelining**: Designed async CPU-GPU execution pipelines to eliminate redundant PCIe data transfers
+3. **Pipelining**: Designed async CPU-GPU execution pipelines to eliminate redundant PCIe data transfers.
+
+---
 
 ## Repository Structure & Directory Layout
+
 ```text
 thermal-hpc-acceleration/
 ├── README.md                      # Project documentation and performance report
 ├── requirements.txt               # Dependency specs (NumPy, Numba, CuPy, etc.)
 │
 ├── data/                          # Floorplan input datasets
-│   ├── building_ids.txt           # List of 4,571 building IDs
 │   └── sample_floorplans/         # Sample domain (*_domain.npy) & mask (*_interior.npy)
+│
+├── docs/                          # Visual artifacts and heatmaps
+│   └── images/
+│       ├── task1_raw_input.png    # Task 1: Input data visualization
+│       └── task3_heatmaps.png     # Task 3: Simulation heatmaps
 │
 ├── src/                           # Core Source Code Directory
 │   ├── baseline/
 │   │   └── simulate.py            # Task 2: Single-core NumPy reference implementation
 │   │
 │   ├── cpu_optimization/
-│   │   ├── static_parallel.py     # Task 5: Multi-core CPU (Static scheduling)
-│   │   ├── dynamic_parallel.py    # Task 6: Multi-core CPU (Dynamic scheduling, chunksize=1)
-│   │   └── numba_jit.py           # Task 7: Numba @njit cache-friendly C-loop solver
+│   │   ├── simulate_kernprof.py   # Task 4: Line-by-line profiling via line_profiler (@profile)
+│   │   ├── simu_para_static.py    # Task 5: Static chunking multi-processing implementation
+│   │   ├── simu_para_dynamic.py   # Task 6: Dynamic load balancing queue multi-processing
+│   │   └── simu_numba.py          # Task 7: CPU JIT compilation via Numba (@njit)
 │   │
-│   └── gpu_acceleration/
-│       ├── custom_cuda.py         # Task 8: Numba @cuda.jit custom 2D grid kernel
-│       ├── naive_cupy.py          # Task 9: High-level CuPy array implementation
-│       └── fused_cupy.py          # Task 10: Fused kernel (@cp.fuse) + pipelined convergence
+│   ├── gpu_acceleration/
+│   │   ├── simu_gpu.py            # Task 8: Custom Numba CUDA Kernel execution (@cuda.jit)
+│   │   ├── simu_cupy.py           # Task 9: Baseline CuPy array acceleration on GPU
+│   │   ├── simu_cupy_fused_mask.py# Task 10: Fused CuPy Kernel for interior mask updates (@cp.fuse)
+│   │   ├── simu_final.py          # Task 12: Full batch GPU execution (Part 1/2)
+│   │   └── simu_final_part2.py    # Task 12: Full batch GPU execution (Part 2/2)
+│   │
+│   └── visualization/
+│       ├── t1-vis.py              # Task 1: Raw Data Reading and Initial Domain Visualization
+│       ├── simulation_vis.py      # Task 3: Simulation result heatmap plotting
+│       └── task12_summary.py      # Task 12: Result aggregation & statistics solver
 │
 ├── profiling/                     # Performance Engineering & Profiling Artifacts
-│   ├── kernprof_analysis/        # CPU line-by-line profiling logs
+│   ├── kernprof_analysis/         # CPU line-by-line profiling logs
 │   └── nsys_reports/              # NVIDIA Nsys GPU trace logs & CUDA API bottleneck data
 │
 └── hpc_scripts/                   # LSF 10 Cluster Batch Submission Scripts (DTU DCC)
-    ├── submit_cpu_bench.sh        # LSF job script for CPU multi-core scaling
-    └── submit_gpu_v100.sh         # LSF job script for NVIDIA V100 GPU tasks
-```
+    ├── submit_task1.sh            # Task 1: Data extraction and cluster visualization script
+    ├── submit_task2.sh            # Task 2: LSF batch submission script for baseline benchmark
+    ├── profile_task4.sh           # Task 4: LSF job batch script for kernprof analysis
+    ├── static_batch.sh            # Task 5: Multi-core scaling benchmark (Static scheduling)
+    ├── dynamic_batch.sh           # Task 6: Multi-core scaling benchmark (Dynamic scheduling)
+    ├── sub_njit.sh                # Task 7: LSF submission for Numba CPU JIT evaluation
+    ├── sub_gpuv.sh                # Task 8: LSF job submission script for NVIDIA GPU node
+    ├── sub_cupy.sh                # Task 9: LSF submission for CuPy baseline evaluation
+    ├── sub_cupy_fused_mask_prof.sh# Task 10: LSF script for Nsys Profiling on fused CuPy kernel
+    ├── sub_final_2000.sh          # Task 12: Full batch partition 1 (Walltime workaround)
+    └── sub_final_part2.sh         # Task 12: Full batch partition 2

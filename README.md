@@ -99,8 +99,8 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 
 | Task 1: Initial Input & Domain Mask | Task 3: Steady-State Heat Diffusion |
 | :---: | :---: |
-| ![Task 1 Raw Data](docs/images/task1_raw_input.png) | ![Task 3 Heatmaps](docs/images/task3_heatmaps.png) |
-| *Initial temperature domain & interior mask layout* | *Thermal equilibrium solved via Jacobi stencil relaxation* |
+| ![Task 1 Raw Data](docs/images/task1_raw_input.jpg) | ![Task 3 Heatmaps](docs/images/task3_heatmaps.jpg) |
+| *Initial temperature domain & interior mask layout* | *Simulation Results* |
 
 * **Temperature Distribution**: Across all 4,571 floorplans, the equilibrium mean temperature exhibits a unimodal, bell-shaped distribution centered around **$14.69^\circ\text{C}$** ($\sigma \approx 6.80^\circ\text{C}$).
 * **Thermal Comfort ($\ge 18^\circ\text{C}$)**: Only **17.6% (804 buildings)** satisfy the comfort threshold over $>50\%$ of their floor area.

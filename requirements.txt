@@ -1,0 +1,23 @@
+# Thermal PDE Acceleration Pipeline - Dependencies
+# Developed & Executed on DTU HPC Cluster (LSF 10 / RHEL)
+# Project developed for DTU 02613 Python & High-Performance Computing
+
+# --- Core Compute & Data Processing ---
+numpy>=1.22.0,<2.0.0      # Fundamental array manipulation & baseline Jacobi implementation
+scipy>=1.8.0              # Scientific computing routines & domain statistics
+
+# --- CPU Acceleration & Profiling ---
+numba>=0.56.0             # Just-In-Time (JIT) compiler (@njit & @cuda.jit)
+line_profiler>=4.0.0      # Line-by-line profiling via kernprof for Task 4 analysis
+
+# --- GPU Acceleration & CUDA Integration ---
+# Note: For HPC clusters with CUDA 11.x (e.g., NVIDIA V100), install cupy-cuda11x.
+# Replace with cupy-cuda12x if using CUDA 12 environment.
+cupy-cuda11x>=10.0.0      # Array acceleration & kernel fusion (@cp.fuse)
+
+# --- Visualization & Plotting ---
+matplotlib>=3.5.0         # Thermal heatmap & performance scaling plots
+seaborn>=0.11.2           # Enhanced statistical visualization
+
+# --- Utility & Environment ---
+tqdm>=4.64.0              # Progress bar for dataset batch processing

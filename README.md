@@ -53,11 +53,11 @@ Updates repeat until maximum iteration or convergence ($\Delta = \max\vert{}u^{(
 
 ## Key Achievements & Technical Highlights
 
-* **🚀 24.3x Peak Speedup**: Scaled processing speed **from ~13.9 hours down to ~24 minutes** for all 4,571 floorplans.
-* **🔍 Profiling-Driven Memory Optimization**: Discovered via NVIDIA Nsys that **88.7% of CUDA API time** was spent on dynamic allocation (`cudaMalloc`). Refactored convergence evaluation checks, reducing kernel launch calls by **98.4%**.
-* **⚙️ Chunked HPC Execution Strategy**: To circumvent strict LSF wall-clock time limits during full-dataset sweeps (4,571 floorplans), execution was partitioned into decoupled batch scripts (`sub_final_2000.sh` & `sub_final_part2.sh`) and aggregated via `task12_summary.py`.
-* **🤖 AI-Augmented Workflow**: Leveraged Gemini as an engineering pair-programmer to profile memory bottlenecks, restructure memory alignment (row-major C-loops), and debug CUDA thread bounds.
-* **📊 Physical Evaluation**: Simulated 4,500+ buildings—revealing that only **17.6%** satisfy human thermal comfort over $>50\%$ of their room area with wall heating alone.
+* **24.3x Peak Speedup**: Scaled processing speed **from ~13.9 hours down to ~34 minutes** for all 4,571 floorplans.
+* **Profiling-Driven Memory Optimization**: Discovered via NVIDIA Nsys that **88.7% of CUDA API time** was spent on dynamic allocation (`cudaMalloc`). Optimized convergence evaluation checks, reducing kernel launch calls by **98.4%**.
+* **Chunked HPC Execution Strategy**: Split the full dataset (4,571 floorplans) into two independent batch scripts (`sub_final_2000.sh` & `sub_final_part2.sh`) to avoid cluster wall-clock time limits, then merged the output results using `task12_summary.py`.
+* **AI-Assisted Development**: Used Gemini as a coding assistant to help analyze profiling logs, optimize memory loops, and fix CUDA boundary errors.
+* **Physical Evaluation**: Simulated 4,500+ buildings, showing that wall heating alone is ineffective—only **17.6%** of floorplans meet human thermal comfort ($\ge 18^\circ\text{C}$) over more than half of their room area.
 
 ---
 
@@ -73,7 +73,7 @@ Extrapolated from a benchmark subset of 20 floorplans ($514 \times 514$ grids) t
 | **Task 7: CPU Acceleration** | Numba `@njit` (Cache-friendly C-contiguous loops) | 63.0 s | 3.5x | ~4.00 hours |
 | **Task 8: Custom GPU Kernel** | Numba `@cuda.jit` + Pre-allocated Static Arrays | 27.0 s | 8.1x | ~1.70 hours |
 | **Task 9: Naive GPU** | High-level CuPy Array Operations | 55.0 s | 4.0x | ~3.49 hours |
-| **🎯 Task 10: Fused GPU** | **CuPy `@cp.fuse()` + Pipelined Convergence (1/10 iter)** | **9.0 s** | **24.3x** | **~24 minutes** |
+| **🎯 Task 10: Fused GPU** | **CuPy `@cp.fuse()` + Pipelined Convergence (1/10 iter)** | **9.0 s** | **24.3x** | **~34 minutes** |
 
 ---
 
